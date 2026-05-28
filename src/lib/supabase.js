@@ -132,3 +132,39 @@ export const reorderBlocks = async (blocks) => {
   const { error } = await supabase.from('note_blocks').upsert(updates)
   if (error) throw error
 }
+
+export async function getProfile(userId) {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function logDeviceInfo(userId) {
+  const info = {
+    user_id:      userId,
+    device_type:  /Mobile|Android|iPhone/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
+    os:           navigator.platform || 'unknown',
+    browser:      navigator.userAgent.split(' ').pop() || 'unknown',
+    screen_width:  window.screen.width,
+    screen_height: window.screen.height,
+    timezone:     Intl.DateTimeFormat().resolvedOptions().timeZone,
+    language:     navigator.language,
+    logged_at:    new Date().toISOString(),
+  }
+  await supabase.from('device_logs').insert(info).catch(() => {})
+}
+
+export async function logActivity(userId, action, app = 'landing') {
+  await supabase.from('activity_logs').insert({
+    user_id: userId, action, app,
+    logged_at: new Date().toISOString(),
+  }).catch(() => {})
+}
+
+export async function signOut() {
+  await supabase.auth.signOut()
+}
